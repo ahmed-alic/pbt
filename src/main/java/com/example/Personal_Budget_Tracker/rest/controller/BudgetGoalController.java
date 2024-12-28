@@ -4,11 +4,11 @@ import com.example.Personal_Budget_Tracker.core.model.BudgetGoal;
 import com.example.Personal_Budget_Tracker.core.service.BudgetGoalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/budget-goal")
+@CrossOrigin(origins = "http://localhost:3000")
 public class BudgetGoalController {
     private final BudgetGoalService budgetGoalService;
 

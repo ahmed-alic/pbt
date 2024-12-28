@@ -29,10 +29,6 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
 
-    public Category addCategory(Category category) {
-        return categoryRepository.save(category);
-    }
-
     public void deleteCategory(Long id) {
         categoryRepository.deleteById(id);
     }
@@ -50,6 +46,9 @@ public class CategoryService {
     }
 
     public Category createCategory(Category category) {
-        return null;
+        if (category.getName() == null || category.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category name cannot be empty");
+        }
+        return categoryRepository.save(category);
     }
 }

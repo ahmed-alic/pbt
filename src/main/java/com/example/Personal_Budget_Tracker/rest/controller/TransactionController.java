@@ -5,11 +5,11 @@ import com.example.Personal_Budget_Tracker.core.service.CategoryService;
 import com.example.Personal_Budget_Tracker.core.service.TransactionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/transaction")
+@CrossOrigin(origins = "http://localhost:3000")
 public class TransactionController {
     private final TransactionService transactionService;
     private final CategoryService categoryService;
