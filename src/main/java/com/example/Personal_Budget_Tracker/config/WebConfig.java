@@ -5,9 +5,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@EnableWebMvc
 public class WebConfig implements WebMvcConfigurer {
 
     @Bean
@@ -23,6 +25,9 @@ public class WebConfig implements WebMvcConfigurer {
         
         // Allow all headers
         config.addAllowedHeader("*");
+        
+        // Allow credentials
+        config.setAllowCredentials(true);
         
         // Apply this configuration to all paths
         source.registerCorsConfiguration("/**", config);

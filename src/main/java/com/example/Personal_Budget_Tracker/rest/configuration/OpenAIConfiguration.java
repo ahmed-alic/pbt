@@ -5,7 +5,7 @@ import com.theokanning.openai.service.OpenAiService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import java.time.Duration;
 
 @Configuration
 public class OpenAIConfiguration {
@@ -19,6 +19,9 @@ public class OpenAIConfiguration {
 
     @Bean
     public OpenAiService openAiService() {
-        return new OpenAiService(this.apiSecret);
+        if (apiSecret == null || apiSecret.trim().isEmpty()) {
+            throw new IllegalStateException("OpenAI API key is not configured. Please check your .env file.");
+        }
+        return new OpenAiService(apiSecret, Duration.ofSeconds(30));
     }
 }

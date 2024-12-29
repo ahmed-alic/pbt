@@ -26,7 +26,17 @@ public class CategoryService {
     }
 
     public List<Category> getAllCategories() {
-        return categoryRepository.findAll();
+        try {
+            System.out.println("CategoryService: Getting all categories");
+            List<Category> categories = categoryRepository.findAll();
+            System.out.println("CategoryService: Found " + categories.size() + " categories");
+            System.out.println("CategoryService: Categories: " + categories);
+            return categories;
+        } catch (Exception e) {
+            System.err.println("CategoryService: Error getting categories: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public void deleteCategory(Long id) {

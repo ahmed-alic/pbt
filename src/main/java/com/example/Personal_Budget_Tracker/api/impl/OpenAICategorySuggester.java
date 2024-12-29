@@ -15,13 +15,35 @@ public class OpenAICategorySuggester implements CategorySuggester {
 
     @Override
     public String suggestCategory(String description) {
-        String prompt = "Suggest a category for the following task description: " + description;
-        CompletionRequest completionRequest = CompletionRequest.builder()
-                .prompt(prompt)
-                .model("gpt-3.5-turbo-instruct")
-                .maxTokens(10)
-                .build();
-        return openAiService.createCompletion(completionRequest).getChoices().get(0).getText().trim();
+        System.out.println("Generating category suggestion for: " + description);
+        
+        String prompt = String.format(
+            "Given this transaction description: '%s'\n" +
+            "Suggest a single word category that best fits this transaction.\n" +
+            "Choose ONLY from these available categories: mortgage, groceries, gas, salary, vacation, car\n" +
+            "Reply with ONLY the category name in lowercase, nothing else.", 
+            description
+        );
+        
+        System.out.println("Sending prompt to OpenAI: " + prompt);
+        
+        try {
+            CompletionRequest completionRequest = CompletionRequest.builder()
+                    .prompt(prompt)
+                    .model("gpt-3.5-turbo-instruct")
+                    .maxTokens(10)
+                    .temperature(0.1)
+                    .build();
+            
+            String suggestion = openAiService.createCompletion(completionRequest)
+                    .getChoices().get(0).getText().trim().toLowerCase();
+            
+            System.out.println("Received suggestion from OpenAI: " + suggestion);
+            return suggestion;
+        } catch (Exception e) {
+            System.err.println("Error calling OpenAI: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }
-

@@ -21,6 +21,7 @@ public class Transaction {
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "budgetgoal_id", nullable = true)
     private BudgetGoal budgetgoal;
 
     // Constructor for Dependency Injection

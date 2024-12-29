@@ -3,6 +3,7 @@ package com.example.Personal_Budget_Tracker.core.service;
 import com.example.Personal_Budget_Tracker.core.model.BudgetGoal;
 import com.example.Personal_Budget_Tracker.core.model.Transaction;
 import com.example.Personal_Budget_Tracker.core.repository.BudgetGoalRepository;
+import com.example.Personal_Budget_Tracker.core.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +13,12 @@ import java.util.List;
 public class BudgetGoalService {
 
     private final BudgetGoalRepository budgetGoalRepository;
+    private final TransactionRepository transactionRepository;
 
     // Constructor for dependency injection
-    public BudgetGoalService(BudgetGoalRepository budgetGoalRepository) {
+    public BudgetGoalService(BudgetGoalRepository budgetGoalRepository, TransactionRepository transactionRepository) {
         this.budgetGoalRepository = budgetGoalRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     public List<BudgetGoal> getAllBudgetGoals() {
@@ -39,7 +42,21 @@ public class BudgetGoalService {
         return budgetGoalRepository.save(existingGoal);
     }
 
+    @Transactional
     public void deleteBudgetGoal(Long id) {
+        BudgetGoal budgetGoal = budgetGoalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Budget Goal not found with ID: " + id));
+        
+        // Get all transactions associated with this budget goal
+        List<Transaction> transactions = transactionRepository.findByBudgetgoal(budgetGoal);
+        
+        // Set budgetgoal to null for all associated transactions
+        for (Transaction transaction : transactions) {
+            transaction.setBudgetgoal(null);
+            transactionRepository.save(transaction);
+        }
+        
+        // Now we can safely delete the budget goal
         budgetGoalRepository.deleteById(id);
     }
 
