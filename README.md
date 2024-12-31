@@ -2,7 +2,7 @@
 
 A full-stack application for tracking personal finances, built with Spring Boot and React.
 
-## Setup Instructions
+
 
 ### Backend Setup
 
