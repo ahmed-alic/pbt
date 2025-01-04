@@ -1,31 +1,45 @@
 package com.example.Personal_Budget_Tracker.api.impl;
 
 import com.example.Personal_Budget_Tracker.core.api.categorysuggester.CategorySuggester;
+import com.example.Personal_Budget_Tracker.core.repository.CategoryRepository;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 @Component
 public class OpenAICategorySuggester implements CategorySuggester {
     private final OpenAiService openAiService;
+    private final CategoryRepository categoryRepository;
+    private final Logger logger = LoggerFactory.getLogger(OpenAICategorySuggester.class);
 
-    public OpenAICategorySuggester(OpenAiService openAiService) {
+    public OpenAICategorySuggester(OpenAiService openAiService, CategoryRepository categoryRepository) {
         this.openAiService = openAiService;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
     public String suggestCategory(String description) {
-        System.out.println("Generating category suggestion for: " + description);
+        logger.info("Generating category suggestion for: {}", description);
+        
+        // Get all available categories
+        String availableCategories = categoryRepository.findAll()
+            .stream()
+            .map(category -> category.getName().toLowerCase())
+            .collect(Collectors.joining(", "));
         
         String prompt = String.format(
             "Given this transaction description: '%s'\n" +
             "Suggest a single word category that best fits this transaction.\n" +
-            "Choose ONLY from these available categories: mortgage, groceries, gas, salary, vacation, car\n" +
+            "Choose ONLY from these available categories: %s\n" +
             "Reply with ONLY the category name in lowercase, nothing else.", 
-            description
+            description,
+            availableCategories
         );
         
-        System.out.println("Sending prompt to OpenAI: " + prompt);
+        logger.debug("Sending prompt to OpenAI: {}", prompt);
         
         try {
             CompletionRequest completionRequest = CompletionRequest.builder()
@@ -35,15 +49,15 @@ public class OpenAICategorySuggester implements CategorySuggester {
                     .temperature(0.1)
                     .build();
             
-            String suggestion = openAiService.createCompletion(completionRequest)
+            String response = openAiService.createCompletion(completionRequest)
                     .getChoices().get(0).getText().trim().toLowerCase();
             
-            System.out.println("Received suggestion from OpenAI: " + suggestion);
-            return suggestion;
+            logger.info("OpenAI suggested category: {}", response);
+            return response;
+            
         } catch (Exception e) {
-            System.err.println("Error calling OpenAI: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            logger.error("Error getting category suggestion from OpenAI: {}", e.getMessage(), e);
+            return "other"; // fallback category
         }
     }
 }
