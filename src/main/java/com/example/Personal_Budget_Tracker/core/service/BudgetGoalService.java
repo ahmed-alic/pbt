@@ -36,6 +36,7 @@ public class BudgetGoalService {
 
     public BudgetGoal updateBudgetGoal(Long id, BudgetGoal updatedGoal) {
         BudgetGoal existingGoal = getBudgetGoalById(id);
+        existingGoal.setName(updatedGoal.getName());
         existingGoal.setAmount(updatedGoal.getAmount());
         existingGoal.setTimePeriod(updatedGoal.getTimePeriod());
         existingGoal.setCurrentSpending(updatedGoal.getCurrentSpending());

@@ -100,4 +100,14 @@ public class TransactionService {
     public OpenAiService getOpenAiService() {
         return openAiService;
     }
+
+    public List<Transaction> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date must not be null");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must not be after end date");
+        }
+        return transactionRepository.findByDateBetween(startDate, endDate);
+    }
 }
