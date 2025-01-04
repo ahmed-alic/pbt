@@ -6,6 +6,8 @@ import com.example.Personal_Budget_Tracker.core.service.TransactionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/transaction")
@@ -13,6 +15,7 @@ import java.util.List;
 public class TransactionController {
     private final TransactionService transactionService;
     private final CategoryService categoryService;
+    private final Logger logger = LoggerFactory.getLogger(TransactionController.class);
 
     public TransactionController(TransactionService transactionService, CategoryService categoryService) {
         this.transactionService = transactionService;
@@ -32,6 +35,21 @@ public class TransactionController {
     @GetMapping("/{id}")
     public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id) {
         return ResponseEntity.ok(transactionService.getTransactionById(id));
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Transaction> updateTransaction(
+            @PathVariable Long id,
+            @RequestBody Transaction transaction) {
+        logger.info("Updating transaction with ID: {}", id);
+        try {
+            Transaction updatedTransaction = transactionService.updateTransaction(id, transaction);
+            logger.info("Successfully updated transaction: {}", updatedTransaction);
+            return ResponseEntity.ok(updatedTransaction);
+        } catch (Exception e) {
+            logger.error("Error updating transaction with ID {}: {}", id, e.getMessage());
+            throw e;
+        }
     }
 
     @GetMapping("/suggest/{transactionId}")

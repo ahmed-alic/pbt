@@ -8,7 +8,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/budget-goal")
-@CrossOrigin(origins = "http://localhost:3000")
 public class BudgetGoalController {
     private final BudgetGoalService budgetGoalService;
 

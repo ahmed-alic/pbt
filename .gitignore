@@ -34,7 +34,6 @@ build/
 
 ### Environment Files ###
 .env
-src/main/resources/application-local.yml
 *.log
 
 ### Node ###
@@ -42,3 +41,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+### Application properties ###
+src/main/resources/application-local.yml
