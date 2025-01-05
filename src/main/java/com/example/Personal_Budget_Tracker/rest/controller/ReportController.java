@@ -4,8 +4,10 @@ import com.example.Personal_Budget_Tracker.core.service.ReportService;
 import com.example.Personal_Budget_Tracker.core.service.PDFExportService;
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlyReportResponse;
 import com.example.Personal_Budget_Tracker.rest.dto.PDFExportRequest;
+import com.example.Personal_Budget_Tracker.rest.dto.ErrorResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -46,31 +49,87 @@ public class ReportController {
         }
     }
 
+    @GetMapping("/monthly")
+    public ResponseEntity<?> getMonthlyReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("End date cannot be before start date"));
+        }
+        Map<String, Object> report = reportService.generateMonthlyReport(startDate, endDate);
+        return ResponseEntity.ok(report);
+    }
+
+    @GetMapping("/category")
+    public ResponseEntity<?> getCategoryReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("End date cannot be before start date"));
+        }
+        Map<String, Object> report = reportService.generateCategoryReport(startDate, endDate);
+        return ResponseEntity.ok(report);
+    }
+
+    @GetMapping("/monthly/export")
+    public ResponseEntity<?> exportMonthlyReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("End date cannot be before start date"));
+        }
+        byte[] pdfBytes = reportService.exportMonthlyReportPdf(startDate, endDate);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("filename", "monthly-report.pdf");
+        
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/category/export")
+    public ResponseEntity<?> exportCategoryReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("End date cannot be before start date"));
+        }
+        byte[] pdfBytes = reportService.exportCategoryReportPdf(startDate, endDate);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("filename", "category-report.pdf");
+        
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
     @GetMapping("/export-pdf")
     public ResponseEntity<byte[]> exportReportPDF(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(required = false) List<String> categories) {
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam String reportType) {
         
-        logger.info("Received request to export PDF report from {} to {}", startDate, endDate);
+        logger.info("Received request to export {} report as PDF from {} to {}", reportType, startDate, endDate);
         
         try {
+            String filename = reportType.toLowerCase() + "-report-" + 
+                    startDate.format(DateTimeFormatter.ISO_DATE) + "-to-" + 
+                    endDate.format(DateTimeFormatter.ISO_DATE) + ".pdf";
+            
             byte[] pdfContent = pdfExportService.generateReportPDF(startDate, endDate, categories);
             
-            String filename = String.format("spending-report-%s-to-%s.pdf",
-                startDate.format(DateTimeFormatter.ISO_DATE),
-                endDate.format(DateTimeFormatter.ISO_DATE));
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", filename);
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-
-            return ResponseEntity
-                    .ok()
+            headers.setContentDispositionFormData("filename", filename);
+            
+            return ResponseEntity.ok()
                     .headers(headers)
                     .body(pdfContent);
-
         } catch (Exception e) {
             logger.error("Error generating PDF report: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();

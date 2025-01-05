@@ -2,6 +2,7 @@ package com.example.Personal_Budget_Tracker.core.service;
 
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlyReportResponse;
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlySpendingDTO;
+import com.example.Personal_Budget_Tracker.rest.dto.PDFExportRequest;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PDFExportService {
@@ -30,6 +32,86 @@ public class PDFExportService {
 
     public PDFExportService(ReportService reportService) {
         this.reportService = reportService;
+    }
+
+    public byte[] generatePDF(PDFExportRequest request) {
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            Map<String, Object> reportData;
+            String title;
+
+            if ("monthly".equalsIgnoreCase(request.getReportType())) {
+                reportData = reportService.generateMonthlyReport(request.getStartDate(), request.getEndDate());
+                title = "Monthly Spending Report";
+            } else if ("category".equalsIgnoreCase(request.getReportType())) {
+                reportData = reportService.generateCategoryReport(request.getStartDate(), request.getEndDate());
+                title = "Category Spending Report";
+            } else {
+                throw new IllegalArgumentException("Invalid report type: " + request.getReportType());
+            }
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                float yPosition = page.getMediaBox().getHeight() - MARGIN;
+
+                // Add title
+                contentStream.beginText();
+                contentStream.setFont(PDType1Font.HELVETICA_BOLD, FONT_SIZE_TITLE);
+                contentStream.newLineAtOffset(MARGIN, yPosition);
+                contentStream.showText(title);
+                contentStream.endText();
+                yPosition -= FONT_SIZE_TITLE * LINE_HEIGHT;
+
+                // Add date range
+                contentStream.beginText();
+                contentStream.setFont(PDType1Font.HELVETICA, FONT_SIZE_NORMAL);
+                contentStream.newLineAtOffset(MARGIN, yPosition);
+                contentStream.showText(String.format("Period: %s to %s", 
+                    request.getStartDate(), request.getEndDate()));
+                contentStream.endText();
+                yPosition -= FONT_SIZE_NORMAL * LINE_HEIGHT * 2;
+
+                // Add report data
+                contentStream.setFont(PDType1Font.HELVETICA, FONT_SIZE_NORMAL);
+                if (reportData.containsKey("monthlyTotals")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Double> monthlyTotals = (Map<String, Double>) reportData.get("monthlyTotals");
+                    for (Map.Entry<String, Double> entry : monthlyTotals.entrySet()) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(MARGIN, yPosition);
+                        contentStream.showText(String.format("%s: $%.2f", entry.getKey(), entry.getValue()));
+                        contentStream.endText();
+                        yPosition -= FONT_SIZE_NORMAL * LINE_HEIGHT;
+                    }
+                } else if (reportData.containsKey("categoryTotals")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Double> categoryTotals = (Map<String, Double>) reportData.get("categoryTotals");
+                    for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(MARGIN, yPosition);
+                        contentStream.showText(String.format("%s: $%.2f", entry.getKey(), entry.getValue()));
+                        contentStream.endText();
+                        yPosition -= FONT_SIZE_NORMAL * LINE_HEIGHT;
+                    }
+                }
+
+                // Add total
+                contentStream.beginText();
+                contentStream.setFont(PDType1Font.HELVETICA_BOLD, FONT_SIZE_NORMAL);
+                contentStream.newLineAtOffset(MARGIN, yPosition - FONT_SIZE_NORMAL * LINE_HEIGHT);
+                contentStream.showText(String.format("Total Spending: $%.2f", reportData.get("totalSpending")));
+                contentStream.endText();
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            document.save(baos);
+            return baos.toByteArray();
+
+        } catch (IOException e) {
+            logger.error("Error generating PDF report", e);
+            throw new RuntimeException("Failed to generate PDF report", e);
+        }
     }
 
     public byte[] generateReportPDF(LocalDate startDate, LocalDate endDate, List<String> categories) {
@@ -111,65 +193,69 @@ public class PDFExportService {
         return yPosition - (FONT_SIZE_NORMAL * LINE_HEIGHT * 2);
     }
 
-    private float addDetailedBreakdown(PDPageContentStream contentStream, float yPosition, 
+    private float addDetailedBreakdown(PDPageContentStream contentStream, float yPosition,
                                      List<MonthlySpendingDTO> spendingByCategory) throws IOException {
         // Add breakdown title
         contentStream.beginText();
         contentStream.setFont(PDType1Font.HELVETICA_BOLD, FONT_SIZE_HEADING);
         contentStream.newLineAtOffset(MARGIN, yPosition);
-        contentStream.showText("Spending by Category");
+        contentStream.showText("Category Breakdown");
         contentStream.endText();
         
-        yPosition -= FONT_SIZE_HEADING * LINE_HEIGHT * 1.5f;
+        yPosition -= FONT_SIZE_HEADING * LINE_HEIGHT;
 
-        // Add table headers
-        float[] columnWidths = {200f, 100f, 100f, 100f};
-        String[] headers = {"Category", "Amount", "Percentage", "Transactions"};
-        
-        float xPosition = MARGIN;
+        // Add column headers
+        float col1X = MARGIN;
+        float col2X = MARGIN + 150;
+        float col3X = MARGIN + 250;
+        float col4X = MARGIN + 350;
+
         contentStream.beginText();
         contentStream.setFont(PDType1Font.HELVETICA_BOLD, FONT_SIZE_NORMAL);
-        contentStream.newLineAtOffset(xPosition, yPosition);
-        
-        for (int i = 0; i < headers.length; i++) {
-            contentStream.showText(headers[i]);
-            contentStream.newLineAtOffset(columnWidths[i], 0);
-        }
+        contentStream.newLineAtOffset(col1X, yPosition);
+        contentStream.showText("Category");
         contentStream.endText();
-        
+
+        contentStream.beginText();
+        contentStream.newLineAtOffset(col2X, yPosition);
+        contentStream.showText("Amount");
+        contentStream.endText();
+
+        contentStream.beginText();
+        contentStream.newLineAtOffset(col3X, yPosition);
+        contentStream.showText("Percentage");
+        contentStream.endText();
+
+        contentStream.beginText();
+        contentStream.newLineAtOffset(col4X, yPosition);
+        contentStream.showText("Count");
+        contentStream.endText();
+
         yPosition -= FONT_SIZE_NORMAL * LINE_HEIGHT;
 
-        // Add table rows
+        // Add category rows
+        contentStream.setFont(PDType1Font.HELVETICA, FONT_SIZE_NORMAL);
         for (MonthlySpendingDTO spending : spendingByCategory) {
-            if (yPosition < MARGIN + 50) { // Check if we need a new page
-                contentStream.close();
-                PDPage newPage = new PDPage(PDRectangle.A4);
-                yPosition = newPage.getMediaBox().getHeight() - MARGIN;
-                // TODO: Handle page breaks properly
-            }
-
-            xPosition = MARGIN;
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA, FONT_SIZE_NORMAL);
-            contentStream.newLineAtOffset(xPosition, yPosition);
-            
-            // Category
+            contentStream.newLineAtOffset(col1X, yPosition);
             contentStream.showText(spending.getCategory());
-            contentStream.newLineAtOffset(columnWidths[0], 0);
-            
-            // Amount
-            contentStream.showText(String.format("$%.2f", spending.getAmount()));
-            contentStream.newLineAtOffset(columnWidths[1], 0);
-            
-            // Percentage
-            contentStream.showText(String.format("%.1f%%", spending.getPercentage()));
-            contentStream.newLineAtOffset(columnWidths[2], 0);
-            
-            // Transaction count
-            contentStream.showText(String.valueOf(spending.getTransactionCount()));
-            
             contentStream.endText();
-            
+
+            contentStream.beginText();
+            contentStream.newLineAtOffset(col2X, yPosition);
+            contentStream.showText(String.format("$%.2f", spending.getAmount()));
+            contentStream.endText();
+
+            contentStream.beginText();
+            contentStream.newLineAtOffset(col3X, yPosition);
+            contentStream.showText(String.format("%.1f%%", spending.getPercentage()));
+            contentStream.endText();
+
+            contentStream.beginText();
+            contentStream.newLineAtOffset(col4X, yPosition);
+            contentStream.showText(String.valueOf(spending.getTransactionCount()));
+            contentStream.endText();
+
             yPosition -= FONT_SIZE_NORMAL * LINE_HEIGHT;
         }
 
@@ -177,10 +263,10 @@ public class PDFExportService {
     }
 
     private void addFooter(PDPageContentStream contentStream, PDPage page) throws IOException {
-        float yPosition = MARGIN;
+        float footerY = MARGIN;
         contentStream.beginText();
         contentStream.setFont(PDType1Font.HELVETICA, 10);
-        contentStream.newLineAtOffset(MARGIN, yPosition);
+        contentStream.newLineAtOffset(MARGIN, footerY);
         contentStream.showText("Generated on " + 
             LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
         contentStream.endText();

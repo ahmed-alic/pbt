@@ -8,6 +8,7 @@ public class PDFExportRequest {
     private LocalDate endDate;
     private List<String> selectedCategories;
     private String template;
+    private String reportType;
 
     // Default constructor
     public PDFExportRequest() {
@@ -19,6 +20,12 @@ public class PDFExportRequest {
         this.endDate = endDate;
         this.selectedCategories = selectedCategories;
         this.template = template;
+    }
+
+    public PDFExportRequest(LocalDate startDate, LocalDate endDate, String reportType) {
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.reportType = reportType;
     }
 
     // Getters and Setters
@@ -54,6 +61,14 @@ public class PDFExportRequest {
         this.template = template;
     }
 
+    public String getReportType() {
+        return reportType;
+    }
+
+    public void setReportType(String reportType) {
+        this.reportType = reportType;
+    }
+
     @Override
     public String toString() {
         return "PDFExportRequest{" +
@@ -61,6 +76,7 @@ public class PDFExportRequest {
                 ", endDate=" + endDate +
                 ", selectedCategories=" + selectedCategories +
                 ", template='" + template + '\'' +
+                ", reportType='" + reportType + '\'' +
                 '}';
     }
 }

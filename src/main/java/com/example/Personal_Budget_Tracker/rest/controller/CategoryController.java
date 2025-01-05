@@ -3,6 +3,7 @@ package com.example.Personal_Budget_Tracker.rest.controller;
 import com.example.Personal_Budget_Tracker.core.model.Category;
 import com.example.Personal_Budget_Tracker.core.service.CategoryService;
 import com.example.Personal_Budget_Tracker.core.api.categorysuggester.CategorySuggester;
+import com.example.Personal_Budget_Tracker.rest.dto.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/category")
+@CrossOrigin(origins = "http://localhost:3000")
 public class CategoryController {
     private final CategoryService categoryService;
     private final CategorySuggester categorySuggester;
@@ -35,9 +37,15 @@ public class CategoryController {
         }
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<Category> createCategory(@RequestBody Category category) {
+    @PostMapping
+    public ResponseEntity<?> createCategory(@RequestBody Category category) {
         try {
+            if (category.getName() == null || category.getName().trim().isEmpty()) {
+                logger.warn("Attempted to create category with empty name");
+                return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Category name cannot be empty"));
+            }
+
             logger.info("Creating new category: {}", category.getName());
             Category created = categoryService.createCategory(category);
             logger.info("Created category with id: {}", created.getId());
@@ -49,8 +57,14 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category category) {
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody Category category) {
         try {
+            if (category.getName() == null || category.getName().trim().isEmpty()) {
+                logger.warn("Attempted to update category {} with empty name", id);
+                return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Category name cannot be empty"));
+            }
+
             logger.info("Updating category with id {}: {}", id, category);
             category.setId(id);
             Category updated = categoryService.updateCategory(category);
