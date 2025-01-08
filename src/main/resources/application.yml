@@ -1,16 +1,17 @@
 spring:
-  profiles:
-    active: local
   datasource:
+    url: jdbc:mysql://pbt-do-user-18730647-0.j.db.ondigitalocean.com:25060/pbt-live
+    username: doadmin
+    password: AVNS_MzCiZSoE4nbqPs8DHVP
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-# OpenAI configuration template (actual key should be in application-local.yml)
+
 openai:
-  secret: not-set
+  secret: $(OPENAI_API_KEY)
