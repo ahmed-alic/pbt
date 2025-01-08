@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:mysql://pbt-do-user-18730647-0.j.db.ondigitalocean.com:25060/pbt-live
+    username: doadmin
+    password: AVNS_MzCiZSoE4nbqPs8DHVP
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
