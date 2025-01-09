@@ -21,7 +21,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "http://localhost:3000")
 public class ReportController {
     private final ReportService reportService;
     private final PDFExportService pdfExportService;
