@@ -1,9 +1,0 @@
-# Copy this file to application-local.yml and fill in your values
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/personalbudgettracker?useSSL=false&serverTimezone=UTC
-    username: your-db-username
-    password: your-db-password
-
-openai:
-  secret: your-openai-api-key-here
