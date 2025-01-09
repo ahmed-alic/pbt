@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/category")
+@CrossOrigin(origins = "http://localhost:3000")
 public class CategoryController {
     private final CategoryService categoryService;
     private final CategorySuggester categorySuggester;
