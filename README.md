@@ -2,6 +2,8 @@
 
 A full-stack application for tracking personal finances, built with Spring Boot and React.
 
+**LINK for BE deployment: https://pbt-be-live.onrender.com**
+
 ## Setup Instructions
 
 ### Backend Setup
