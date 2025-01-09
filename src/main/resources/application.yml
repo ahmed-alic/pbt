@@ -12,6 +12,5 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-
 openai:
   secret: ${OPENAI_API_KEY}
