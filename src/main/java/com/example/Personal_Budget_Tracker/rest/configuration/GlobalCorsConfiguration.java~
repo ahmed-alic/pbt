@@ -19,8 +19,7 @@ public class GlobalCorsConfiguration implements WebMvcConfigurer {
         
         // Allow localhost:3000 for development
         config.addAllowedOrigin("http://localhost:3000");
-        // Allow your frontend URL on Render
-        config.addAllowedOrigin("https://pbt-fe-live.onrender.com");
+        config.addAllowedOrigin("https://pbt-be-live.onrender.com");
         
         // Allow all HTTP methods
         config.addAllowedMethod("*");
