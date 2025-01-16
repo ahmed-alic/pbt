@@ -5,6 +5,7 @@ import com.example.Personal_Budget_Tracker.core.service.PDFExportService;
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlyReportResponse;
 import com.example.Personal_Budget_Tracker.rest.dto.PDFExportRequest;
 import com.example.Personal_Budget_Tracker.rest.dto.ErrorResponse;
+import com.example.Personal_Budget_Tracker.rest.dto.CategoryTrendResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -131,6 +132,23 @@ public class ReportController {
                     .body(pdfContent);
         } catch (Exception e) {
             logger.error("Error generating PDF report: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/category-trends")
+    public ResponseEntity<CategoryTrendResponse> getCategoryTrends(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) List<String> categories) {
+        
+        logger.info("Received request for category trends from {} to {}", startDate, endDate);
+        
+        try {
+            CategoryTrendResponse response = reportService.getCategoryTrends(startDate, endDate, categories);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error generating category trends: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
