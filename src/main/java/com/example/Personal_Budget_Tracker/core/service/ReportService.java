@@ -4,6 +4,8 @@ import com.example.Personal_Budget_Tracker.core.model.Transaction;
 import com.example.Personal_Budget_Tracker.core.repository.TransactionRepository;
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlyReportResponse;
 import com.example.Personal_Budget_Tracker.rest.dto.MonthlySpendingDTO;
+import com.example.Personal_Budget_Tracker.rest.dto.CategoryTrendResponse;
+import com.example.Personal_Budget_Tracker.rest.dto.MonthlyTrendData;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,6 +102,58 @@ public class ReportService {
         report.put("totalSpending", categoryTotals.values().stream().mapToDouble(Double::doubleValue).sum());
 
         return report;
+    }
+
+    public CategoryTrendResponse getCategoryTrends(LocalDate startDate, LocalDate endDate, List<String> categories) {
+        List<Transaction> transactions = transactionRepository.findByDateBetween(startDate, endDate);
+        
+        // Group transactions by month and category
+        Map<YearMonth, Map<String, Double>> monthlyData = transactions.stream()
+            .filter(t -> t.getCategory() != null && 
+                        (categories == null || categories.isEmpty() || 
+                         categories.contains(t.getCategory().getName())))
+            .collect(Collectors.groupingBy(
+                t -> YearMonth.from(t.getDate()),
+                Collectors.groupingBy(
+                    t -> t.getCategory().getName(),
+                    Collectors.summingDouble(Transaction::getAmount)
+                )
+            ));
+
+        // Create a sorted list of all months in the range
+        List<YearMonth> allMonths = new ArrayList<>();
+        YearMonth current = YearMonth.from(startDate);
+        YearMonth end = YearMonth.from(endDate);
+        while (!current.isAfter(end)) {
+            allMonths.add(current);
+            current = current.plusMonths(1);
+        }
+
+        // Get all unique categories
+        Set<String> allCategories = transactions.stream()
+            .filter(t -> t.getCategory() != null)
+            .map(t -> t.getCategory().getName())
+            .collect(Collectors.toSet());
+
+        // Create trend data for each month
+        List<MonthlyTrendData> trends = allMonths.stream()
+            .map(month -> {
+                Map<String, Double> categoryData = new HashMap<>();
+                Map<String, Double> monthData = monthlyData.getOrDefault(month, new HashMap<>());
+                
+                // Ensure all categories are present in each month's data
+                allCategories.forEach(category -> 
+                    categoryData.put(category, monthData.getOrDefault(category, 0.0))
+                );
+                
+                return new MonthlyTrendData(
+                    month.format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                    categoryData
+                );
+            })
+            .collect(Collectors.toList());
+
+        return new CategoryTrendResponse(trends);
     }
 
     public byte[] exportMonthlyReportPdf(LocalDate startDate, LocalDate endDate) {
